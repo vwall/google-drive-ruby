@@ -18,7 +18,7 @@ module GoogleDrive
         include(Util)
 
         def initialize(session, spreadsheet, cells_feed_url, title = nil, updated = nil) #:nodoc:
-          
+
           @session = session
           @spreadsheet = spreadsheet
           @cells_feed_url = cells_feed_url
@@ -30,7 +30,7 @@ module GoogleDrive
           @numeric_values = nil
           @modified = Set.new()
           @list = nil
-          
+
         end
 
         # URL of cell-based feed of the worksheet.
@@ -74,7 +74,7 @@ module GoogleDrive
         end
 
         # Updates content of the cell.
-        # Arguments in the bracket must be either (row number, column number) or cell name. 
+        # Arguments in the bracket must be either (row number, column number) or cell name.
         # Note that update is not sent to the server until you call save().
         # Top-left cell is [1, 1].
         #
@@ -144,13 +144,13 @@ module GoogleDrive
           reload() if !@cells
           return @numeric_values[[row, col]]
         end
-        
+
         # Row number of the bottom-most non-empty row.
         def num_rows
           reload() if !@cells
           # Memoizes it because this can be bottle-neck.
           # https://github.com/gimite/google-drive-ruby/pull/49
-          return @num_rows ||= @input_values.select(){ |(r, c), v| !v.empty? }.map(){ |(r, c), v| r }.max || 0
+          return @num_rows ||= @input_values.select(){ |(r, c), v| !v.blank? }.map(){ |(r, c), v| r }.max || 0
         end
 
         # Column number of the right-most non-empty column.
@@ -158,7 +158,7 @@ module GoogleDrive
           reload() if !@cells
           # Memoizes it because this can be bottle-neck.
           # https://github.com/gimite/google-drive-ruby/pull/49
-          return @num_cols ||= @input_values.select(){ |(r, c), v| !v.empty? }.map(){ |(r, c), v| c }.max || 0
+          return @num_cols ||= @input_values.select(){ |(r, c), v| !v.blank? }.map(){ |(r, c), v| c }.max || 0
         end
 
         # Number of rows including empty rows.
@@ -229,7 +229,7 @@ module GoogleDrive
         # Reloads content of the worksheets from the server.
         # Note that changes you made by []= etc. is discarded if you haven't called save().
         def reload()
-          
+
           doc = @session.request(:get, @cells_feed_url)
           @max_rows = doc.css("gs|rowCount").text.to_i()
           @max_cols = doc.css("gs|colCount").text.to_i()
@@ -253,12 +253,12 @@ module GoogleDrive
           @modified.clear()
           @meta_modified = false
           return true
-          
+
         end
 
         # Saves your changes made by []=, etc. to the server.
         def save()
-          
+
           sent = false
 
           if @meta_modified
@@ -349,9 +349,9 @@ module GoogleDrive
             sent = true
 
           end
-          
+
           return sent
-          
+
         end
 
         # Calls save() and reload().
@@ -379,7 +379,7 @@ module GoogleDrive
         # See this document for details:
         # http://code.google.com/intl/en/apis/spreadsheets/docs/3.0/developers_guide_protocol.html#TableFeeds
         def add_table(table_title, summary, columns, options)
-          
+
           warn(
               "DEPRECATED: Google Spreadsheet Table and Record feeds are deprecated and they " +
               "will not be available after March 2012.")
@@ -406,7 +406,7 @@ module GoogleDrive
 
           result = @session.request(:post, self.spreadsheet.tables_feed_url, :data => xml)
           return Table.new(@session, result)
-          
+
         end
 
         # DEPRECATED: Table and Record feeds are deprecated and they will not be available after
@@ -429,7 +429,7 @@ module GoogleDrive
           return entry.css(
             "link[rel='http://schemas.google.com/spreadsheets/2006#listfeed']")[0]["href"]
         end
-        
+
         # Provides access to cells using column names, assuming the first row contains column
         # names. Returned object is GoogleDrive::List which you can use mostly as
         # Array of Hash.
@@ -445,7 +445,7 @@ module GoogleDrive
         def list
           return @list ||= List.new(self)
         end
-        
+
         # Returns a [row, col] pair for a cell name string.
         # e.g.
         #   worksheet.cell_name_to_row_col("C2")  #=> [2, 3]
@@ -472,7 +472,7 @@ module GoogleDrive
           fields[:title] = @title if @title
           return "\#<%p %s>" % [self.class, fields.map(){ |k, v| "%s=%p" % [k, v] }.join(", ")]
         end
-        
+
       private
 
         def parse_cell_args(args)
@@ -490,7 +490,7 @@ module GoogleDrive
                 "Arguments must be either one String or two Integer's, but are %p" % [args])
           end
         end
-        
+
     end
-    
+
 end
