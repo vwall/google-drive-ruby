@@ -12,14 +12,14 @@ require "google_drive/file"
 
 
 module GoogleDrive
-    
+
     # A spreadsheet.
     #
     # Use methods in GoogleDrive::Session to get GoogleDrive::Spreadsheet object.
     class Spreadsheet < GoogleDrive::File
 
         include(Util)
-        
+
         SUPPORTED_EXPORT_FORMAT = Set.new(["xls", "csv", "pdf", "ods", "tsv", "html"])
 
         def initialize(session, worksheets_feed_url, title = nil) #:nodoc:
@@ -50,12 +50,12 @@ module GoogleDrive
           end
           return $1
         end
-        
+
         # Spreadsheet feed URL of the spreadsheet.
         def spreadsheet_feed_url
           return "https://spreadsheets.google.com/feeds/spreadsheets/private/full/#{self.key}"
         end
-        
+
         # URL which you can open the spreadsheet in a Web browser with.
         #
         # e.g. "http://spreadsheets.google.com/ccc?key=pz7XtlQC-PYx-jrVMJErTcg"
@@ -77,7 +77,8 @@ module GoogleDrive
 
         # URL of feed used in document list feed API.
         def document_feed_url
-          return "https://docs.google.com/feeds/documents/private/full/spreadsheet%3A#{self.key}"
+          #return "https://docs.google.com/feeds/documents/private/full/spreadsheet%3A#{self.key}"
+          return "https://spreadsheets.google.com/feeds/worksheets/#{self.key}/private/full"
         end
 
         # <entry> element of spreadsheet feed as Nokogiri::XML::Element.
@@ -85,12 +86,14 @@ module GoogleDrive
         # Set <tt>params[:reload]</tt> to true to force reloading the feed.
         def spreadsheet_feed_entry(params = {})
           if !@spreadsheet_feed_entry || params[:reload]
+            params = {"GData-Version" => "3.0"}
             @spreadsheet_feed_entry =
-                @session.request(:get, self.spreadsheet_feed_url).css("entry")[0]
+                #@session.request(:get, self.spreadsheet_feed_url).css("entry")[0]
+                @session.request(:get, self.spreadsheet_feed_url, params).css("entry")[0]
           end
           return @spreadsheet_feed_entry
         end
-        
+
         # <entry> element of document list feed as Nokogiri::XML::Element.
         #
         # Set <tt>params[:reload]</tt> to true to force reloading the feed.
@@ -101,7 +104,7 @@ module GoogleDrive
           end
           return @document_feed_entry
         end
-        
+
         # Creates copy of this spreadsheet with the given title.
         def duplicate(new_title = nil)
           new_title ||= (self.title ? "Copy of " + self.title : "Untitled")
@@ -131,7 +134,7 @@ module GoogleDrive
               "?key=#{key}&exportFormat=#{format}#{gid_param}"
           return @session.request(:get, url, :response_type => :raw)
         end
-        
+
         # Exports the spreadsheet in +format+ as a local file.
         #
         # +format+ can be either "xls", "csv", "pdf", "ods", "tsv" or "html".
@@ -155,7 +158,7 @@ module GoogleDrive
             f.write(export_as_string(format, worksheet_index))
           end
         end
-        
+
         def download_to_io(io, params = {})
           # General downloading API doesn't work for spreadsheets because it requires a different
           # authorization token, and it has a bug that it downloads PDF when text/html is
@@ -163,7 +166,7 @@ module GoogleDrive
           raise(NotImplementedError,
               "Use export_as_file or export_as_string instead for GoogleDrive::Spreadsheet.")
         end
-        
+
         # Returns worksheets of the spreadsheet as array of GoogleDrive::Worksheet.
         def worksheets
           doc = @session.request(:get, @worksheets_feed_url)
@@ -182,7 +185,7 @@ module GoogleDrive
           end
           return result.freeze()
         end
-        
+
         # Returns a GoogleDrive::Worksheet with the given title in the spreadsheet.
         #
         # Returns nil if not found. Returns the first one when multiple worksheets with the
@@ -218,13 +221,13 @@ module GoogleDrive
           doc = @session.request(:get, self.tables_feed_url)
           return doc.css("entry").map(){ |e| Table.new(@session, e) }.freeze()
         end
-        
+
         def inspect
           fields = {:worksheets_feed_url => self.worksheets_feed_url}
           fields[:title] = @title if @title
           return "\#<%p %s>" % [self.class, fields.map(){ |k, v| "%s=%p" % [k, v] }.join(", ")]
         end
-        
+
     end
-    
+
 end
